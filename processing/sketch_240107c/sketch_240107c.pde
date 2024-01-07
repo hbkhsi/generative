@@ -1,4 +1,5 @@
 int _num = 10;
+Circle[] _circleArr = {};
 
 void setup() {
     size(500,300);
@@ -9,7 +10,13 @@ void setup() {
     drawCircles();
 }
 
-void draw() {}
+void draw() {
+    background(255);
+    for (int i = 0; i < _circleArr.length; ++i) {
+        Circle thisCircle = _circleArr[i];
+        thisCircle.updateMe();
+    }
+}
 
 void mouseReleased() {
     drawCircles();
@@ -19,14 +26,16 @@ void drawCircles() {
     for (int i = 0;i < _num; ++i) {
         Circle thisCircle = new Circle();
         thisCircle.drawMe();
+        _circleArr = (Circle[])append(_circleArr, thisCircle);
     }
 }
 
-class Circle { 
+class Circle{ 
     float x, y;
     float r;
     color lineCol, fillCol;
     float alph;
+    float xmove, ymove;
     
     Circle() { // コンストラクタ
         x = random(width);
@@ -35,6 +44,8 @@ class Circle {
         lineCol = color(random(255), random(255), random(255));
         fillCol = color(random(255), random(255), random(255));
         alph = random(255);
+        xmove = random(10) - 5;
+        ymove = random(10) - 5;
     }
     
     void drawMe() { //メソッド
@@ -43,6 +54,17 @@ class Circle {
         ellipse(x, y, r * 2, r * 2);
         stroke(lineCol, 150);
         noFill();
-        //ellipse(x, y, 10, 10);
+        ellipse(x,y, 10, 10);
+    }
+    
+    void updateMe() {
+        x += xmove;
+        y += ymove;
+        if (x > (width + r)) { x = 0 - r; }
+        if (x < (0 - r)) { x = width + r; }
+        if (y > (height + r)) { y = 0 - r; }
+        if (y < (0 - r)) { y = height + r; }
+        
+        drawMe();
     }
 }
