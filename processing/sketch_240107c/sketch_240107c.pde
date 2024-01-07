@@ -11,7 +11,9 @@ void setup() {
 }
 
 void draw() {
-    background(255);
+    noStroke();
+    fill(255,10);
+    rect(0, 0, width, height);
     for (int i = 0; i < _circleArr.length; ++i) {
         Circle thisCircle = _circleArr[i];
         thisCircle.updateMe();
@@ -20,6 +22,7 @@ void draw() {
 
 void mouseReleased() {
     drawCircles();
+    println(_circleArr.length);
 }
 
 void drawCircles() {
@@ -50,11 +53,8 @@ class Circle{
     
     void drawMe() { //メソッド
         noStroke();
-        fill(fillCol, alph);
-        ellipse(x, y, r * 2, r * 2);
-        stroke(lineCol, 150);
         noFill();
-        ellipse(x,y, 10, 10);
+        ellipse(x, y, r * 2, r * 2);
     }
     
     void updateMe() {
@@ -64,6 +64,24 @@ class Circle{
         if (x < (0 - r)) { x = width + r; }
         if (y > (height + r)) { y = 0 - r; }
         if (y < (0 - r)) { y = height + r; }
+        
+        for (int i = 0; i < _circleArr.length; ++i) {
+            Circle otherCircle =  _circleArr[i];
+            if (otherCircle != this) {
+                float dis = dist(x, y, otherCircle.x, otherCircle.y);
+                float overlap  = dis - r - otherCircle.r;
+                if (overlap < 0) {
+                    float midx, midy;
+                    midx = (x + otherCircle.x) / 2;
+                    midy = (y + otherCircle.y) / 2;
+                    stroke(0, 10);
+                    strokeWeight(0.3);
+                    noFill();
+                    overlap *= -0.5;
+                    ellipse(midx, midy, overlap, overlap);
+                }
+            }
+        }
         
         drawMe();
     }
