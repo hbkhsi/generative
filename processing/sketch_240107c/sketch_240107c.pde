@@ -17,12 +17,32 @@ void mouseReleased() {
 
 void drawCircles() {
     for (int i = 0;i < _num; ++i) {
-        float x = random(width);
-        float y = random(height);
-        float r = random(100)  + 10;
+        Circle thisCircle = new Circle();
+        thisCircle.drawMe();
+    }
+}
+
+class Circle { 
+    float x, y;
+    float r;
+    color lineCol, fillCol;
+    float alph;
+    
+    Circle() { // コンストラクタ
+        x = random(width);
+        y = random(height);
+        r = random(100) + 10;
+        lineCol = color(random(255), random(255), random(255));
+        fillCol = color(random(255), random(255), random(255));
+        alph = random(255);
+    }
+    
+    void drawMe() { //メソッド
         noStroke();
+        fill(fillCol, alph);
         ellipse(x, y, r * 2, r * 2);
-        stroke(0, 150);
-        ellipse(x, y, 10, 10);
+        stroke(lineCol, 150);
+        noFill();
+        //ellipse(x, y, 10, 10);
     }
 }
