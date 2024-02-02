@@ -7,7 +7,7 @@ int mosaicSize = 6;
 void settings() {
     img = loadImage("/Users/hibiki/Projects/generative/processing/Images/photo_05.jpg"); // 画像をロード
     float aspectRatio = calculateAspectRatio(img);
-    size(int(500 * aspectRatio), 500); // 画像のサイズに合わせてキャンバスのサイズを設定
+    size(int(1000 * aspectRatio), 1000); // 画像のサイズに合わせてキャンバスのサイズを設定
     //size(img.width, img.height);
     smooth();
 }
