@@ -1,6 +1,9 @@
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
+String startTimestamp = timestamp();
+
+
 PImage img;
 int mosaicSize = 6;
 
