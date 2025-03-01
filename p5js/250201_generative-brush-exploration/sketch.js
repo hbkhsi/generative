@@ -1,114 +1,251 @@
-let cellSize = 30;
-let columnCount;
-let rowCount;
-let currentCells = [];
-let nextCells = [];
+let brushes = [];
+let isBrushMoving = true;
+const brushCount = 30;
+const segmentCount = 200;
+let currentPalette;
+
+// カラーパレットの定義
+const colorPalettes = [
+  ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEEAD"], // 暖色系
+  ["#2A2B2A", "#5E4955", "#996888", "#C99DA3", "#C6DDF0"], // モノクローム系
+  ["#264653", "#2A9D8F", "#E9C46A", "#F4A261", "#E76F51"], // アースカラー
+  ["#D8E2DC", "#FFE5D9", "#FFCAD4", "#F4ACB7", "#9D8189"], // パステル
+  ["#03045E", "#023E8A", "#0077B6", "#0096C7", "#00B4D8"], // ブルースケール
+];
+
+function timestamp() {
+  const d = new Date();
+  return `${d.getFullYear()}${(d.getMonth() + 1).toString().padStart(2, "0")}${d
+    .getDate()
+    .toString()
+    .padStart(2, "0")}-${d.getHours().toString().padStart(2, "0")}${d
+    .getMinutes()
+    .toString()
+    .padStart(2, "0")}${d.getSeconds().toString().padStart(2, "0")}-${d
+    .getMilliseconds()
+    .toString()
+    .padStart(3, "0")}`;
+}
 
 function setup() {
-  // Set simulation framerate to 10 to avoid flickering
-  frameRate(10);
   createCanvas(windowWidth, windowHeight);
+  background(255);
+  frameRate(60);
+  selectRandomPalette();
+  initializeBrushes();
+  
+  // 初回起動時にランダムなモードを選択
+  const initialMode = floor(random(3)); // 0-2の乱数生成
+  brushes.forEach(brush => brush.setMode(initialMode));
+  isBrushMoving = true;
+}
 
-  // Calculate columns and rows
-  columnCount = floor(width / cellSize);
-  rowCount = floor(height / cellSize);
-
-  // Set each column in current cells to an empty array
-  // This allows cells to be added to this array
-  // The index of the cell will be its row number
-  for (let column = 0; column < columnCount; column++) {
-    currentCells[column] = [];
-  }
-
-  // Repeat the same process for the next cells
-  for (let column = 0; column < columnCount; column++) {
-    nextCells[column] = [];
-  }
-
-  noLoop();
-  describe(
-    "Grid of squares that switch between white and black, demonstrating a simulation of John Conway's Game of Life. When clicked, the simulation resets."
-  );
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  initializeBrushes();
 }
 
 function draw() {
-  generate();
-  for (let column = 0; column < columnCount; column++) {
-    for (let row = 0; row < rowCount; row++) {
-      // Get cell value (0 or 1)
-      let cell = currentCells[column][row];
+  if (isBrushMoving) {
+    brushes.forEach((brush) => {
+      if (mouseIsPressed) {
+        brush.setPos(mouseX, mouseY);
+      } else {
+        brush.addToPos(
+          random(-brush.step, brush.step),
+          random(-brush.step, brush.step)
+        );
+      }
+      brush.updateSegmentsPos().draw();
+    });
+  }
+}
 
-      // Convert cell value to get black (0) for alive or white (255 (white) for dead
-      fill((1 - cell) * 255);
-      noStroke();
-      ellipse(column * cellSize, row * cellSize, cellSize, cellSize);
+function selectRandomPalette() {
+  currentPalette = colorPalettes[floor(random(colorPalettes.length))].map(
+    (hex) => {
+      const c = color(hex);
+      return color(red(c), green(c), blue(c));
+    }
+  );
+}
+
+function initializeBrushes() {
+  brushes = [];
+  for (let i = 0; i < brushCount; i++) {
+    const col = color(random(currentPalette));
+    const newBrush = new VineBrush(random(width), random(height), segmentCount, col);
+    
+    // ブラシ初期化時にモードを未設定状態に
+    newBrush.currentMode = -1; // 強制的にモード変更をトリガー
+    
+    brushes.push(newBrush);
+  }
+}
+
+class VineBrush {
+  constructor(x, y, segmentCounts, col) {
+    this.xPos = x;
+    this.yPos = y;
+    this.segments = segmentCounts;
+    this.posArr = [];
+    this.color = col;
+    this.r = 0.1;
+    this.step = 0;
+    this.dist = 0;
+    this.strokeWgt = 0;
+    this.noiseScale = 0;
+    this.fillAlpha = 0;
+    this.strokeAlpha = 0;
+    this.scale = 0;
+    this.currentMode = -1;
+
+    for (let i = 0; i < this.segments; ++i) {
+      this.posArr[i] = createVector(x, y);
+    }
+  }
+
+  setMode(mode) {
+    if (this.currentMode !== mode) {
+      this.currentMode = mode;
+      switch (mode) {
+        case 0:
+          this.dist = 1;
+          this.step = 30;
+          this.strokeWgt = 0.5;
+          this.noiseScale = 0.05;
+          this.fillAlpha = 10;
+          this.strokeAlpha = 20;
+          this.scale = 4;
+          break;
+        case 1:
+          this.dist = 1;
+          this.step = 20;
+          this.strokeWgt = 5;
+          this.noiseScale = 0.5;
+          this.fillAlpha = 20;
+          this.strokeAlpha = 20;
+          this.scale = 20;
+          break;
+        case 2:
+          this.dist = 1;
+          this.step = 40;
+          this.strokeWgt = 1;
+          this.noiseScale = 0.5;
+          this.fillAlpha = 20;
+          this.strokeAlpha = 70;
+          this.scale = 10;
+          break;
+      }
+    }
+  }
+
+  setPos(x, y) {
+    this.xPos = constrain(x, 1, width - 5);
+    this.yPos = constrain(y, 1, height - 5);
+    return this;
+  }
+
+  addToPos(x, y) {
+    return this.setPos((this.xPos += x), (this.yPos += y));
+  }
+
+  updateSegmentsPos() {
+    this.posArr[0].set(this.xPos, this.yPos);
+    for (let i = 1; i < this.segments; ++i) {
+      if (p5.Vector.dist(this.posArr[i], this.posArr[i - 1]) > this.dist) {
+        let tmpVector = p5.Vector.sub(this.posArr[i - 1], this.posArr[i])
+          .normalize()
+          .mult(this.dist);
+        this.posArr[i] = p5.Vector.sub(this.posArr[i - 1], tmpVector);
+      }
+    }
+    return this;
+  }
+
+  draw() {
+    if (this.currentMode === 2) {
+      this.drawPerlinNoiseField();
+    } else {
+      for (let i = this.segments - 1; i > -1; --i) {
+        push();
+        fill(
+          red(this.color),
+          green(this.color),
+          blue(this.color),
+          this.fillAlpha
+        );
+        translate(this.posArr[i].x, this.posArr[i].y);
+        stroke(
+          red(this.color),
+          green(this.color),
+          blue(this.color),
+          this.strokeAlpha
+        );
+        strokeWeight(this.strokeWgt);
+        if (i > 0) {
+          rotate(
+            atan2(
+              this.posArr[i].y - this.posArr[i - 1].y,
+              this.posArr[i].x - this.posArr[i - 1].x
+            )
+          );
+        }
+        let noisyR =
+          this.r / 2 +
+          noise(
+            this.posArr[i].x * this.noiseScale,
+            this.posArr[i].y * this.noiseScale
+          ) *
+            this.scale;
+        ellipse(0, 0, noisyR * 2, noisyR * 2);
+        pop();
+      }
+    }
+  }
+
+  drawPerlinNoiseField() {
+    for (let i = 0; i < this.segments - 1; i++) {
+      let x = this.posArr[i].x;
+      let y = this.posArr[i].y;
+      let angle =
+        noise(x * this.noiseScale, y * this.noiseScale) * TWO_PI * this.scale;
+      let nx = x + cos(angle) * this.step;
+      let ny = y + sin(angle) * this.step;
+      stroke(
+        red(this.color),
+        green(this.color),
+        blue(this.color),
+        this.strokeAlpha
+      );
+      strokeWeight(0.5);
+      line(x, y, nx, ny);
+      this.posArr[i + 1].set(nx, ny);
     }
   }
 }
 
-// Reset board when mouse is pressed
-function mousePressed() {
-  randomizeBoard();
-  loop();
-}
-
-// Fill board randomly
-function randomizeBoard() {
-  for (let column = 0; column < columnCount; column++) {
-    for (let row = 0; row < rowCount; row++) {
-      // Randomly select value of either 0 (dead) or 1 (alive)
-      currentCells[column][row] = random([0, 1]);
-    }
+function keyPressed() {
+  if (key === "s") {
+    saveCanvas(`sketch-${timestamp()}`, "png");
+  } else if (key === "0") {
+    selectRandomPalette();
+    initializeBrushes();
+    isBrushMoving = false;
+    console.log("Refreshed. Press `1` or `2` or `3`");
+  } else if (key === "1") {
+    isBrushMoving = true;
+    console.log("Vine drawing mode");
+    brushes.forEach((brush) => brush.setMode(0));
+  } else if (key === "2") {
+    isBrushMoving = true;
+    console.log("Painting mode");
+    brushes.forEach((brush) => brush.setMode(1));
+  } else if (key === "3") {
+    isBrushMoving = true;
+    console.log("Perlin Noise Field mode");
+    brushes.forEach((brush) => brush.setMode(2));
+  } else if (key === "4") {
+    background(255);
   }
-}
-
-// Create a new generation
-function generate() {
-  // Loop through every spot in our 2D array and count living neighbors
-  for (let column = 0; column < columnCount; column++) {
-    for (let row = 0; row < rowCount; row++) {
-      // Column left of current cell
-      // if column is at left edge, use modulus to wrap to right edge
-      let left = (column - 1 + columnCount) % columnCount;
-
-      // Column right of current cell
-      // if column is at right edge, use modulus to wrap to left edge
-      let right = (column + 1) % columnCount;
-
-      // Row above current cell
-      // if row is at top edge, use modulus to wrap to bottom edge
-      let above = (row - 1 + rowCount) % rowCount;
-
-      // Row below current cell
-      // if row is at bottom edge, use modulus to wrap to top edge
-      let below = (row + 1) % rowCount;
-
-      // Count living neighbors surrounding current cell
-      let neighbours =
-        currentCells[left][above] +
-        currentCells[column][above] +
-        currentCells[right][above] +
-        currentCells[left][row] +
-        currentCells[right][row] +
-        currentCells[left][below] +
-        currentCells[column][below] +
-        currentCells[right][below];
-
-      // Rules of Life
-      // 1. Any live cell with fewer than two live neighbours dies
-      // 2. Any live cell with more than three live neighbours dies
-      if (neighbours < 2 || neighbours > 3) {
-        nextCells[column][row] = 0;
-        // 4. Any dead cell with exactly three live neighbours will come to life.
-      } else if (neighbours === 3) {
-        nextCells[column][row] = 1;
-        // 3. Any live cell with two or three live neighbours lives, unchanged, to the next generation.
-      } else nextCells[column][row] = currentCells[column][row];
-    }
-  }
-
-  // Swap the current and next arrays for next generation
-  let temp = currentCells;
-  currentCells = nextCells;
-  nextCells = temp;
 }

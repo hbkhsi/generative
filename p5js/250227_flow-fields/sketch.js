@@ -15,12 +15,8 @@ function setup() {
 }
 
 function draw() {
-  // Subtle fade for trail effect
-  fill(5,5);
+  fill(5,10);
   noStroke();
-  //rect(0, 0, width, height);
-  
-  // Update noise dimension for evolving flow field
   zoff += 0.003;
   
   for (let particle of particles) {
@@ -29,7 +25,6 @@ function draw() {
   }
 }
 
-// キーが押されたときのイベントハンドラを追加
 function keyPressed() {
   if (key === 's' || key === 'S') {
     saveCanvas('flowfield', 'png');
@@ -66,7 +61,7 @@ class Particle {
   }
   
   display() {
-    stroke(255, this.alpha);
+    stroke(0,random(255),random(255), this.alpha);
     strokeWeight(this.size);
     point(this.pos.x, this.pos.y);
   }
