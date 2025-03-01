@@ -1,4 +1,4 @@
-int _num = 10;
+int _num = 400;
 Circle[] _circleArr = {};
 boolean saveFrames = false;
 int frameCounter = 0;
