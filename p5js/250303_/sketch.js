@@ -6,6 +6,12 @@ const noiseStrength = 5;
 const particleSpeed = 0.7;
 const particleSize = 2;
 const fadeAmount = 5;
+let lastClickTime = 0;
+let clickRipple = false;
+let clickX = 0;
+let clickY = 0;
+let rippleSize = 0;
+let rippleAlpha = 200;
 
 // カラーパレット - 落ち着いた青と紫のトーン
 const colors = [
@@ -17,8 +23,11 @@ const colors = [
 ];
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  let canvas = createCanvas(windowWidth, windowHeight);
   background(10, 10, 20);
+  
+  // キャンバスにマウスプレスイベントを追加
+  canvas.mousePressed(handleMousePress);
   
   // パーティクルの初期化
   for (let i = 0; i < numParticles; i++) {
@@ -74,6 +83,23 @@ function draw() {
     }
   }
   
+  // クリック波紋エフェクトの描画
+  if (clickRipple) {
+    noFill();
+    stroke(200, 220, 255, rippleAlpha);
+    strokeWeight(2);
+    circle(clickX, clickY, rippleSize);
+    
+    // 波紋を拡大し、透明度を下げる
+    rippleSize += 5;
+    rippleAlpha -= 4;
+    
+    // 波紋が大きくなりすぎたら非表示に
+    if (rippleAlpha <= 0) {
+      clickRipple = false;
+    }
+  }
+  
   // 周期的に波のようなパルスを追加
   if (frameCount % 100 === 0) {
     addWavePulse();
@@ -103,19 +129,50 @@ function windowResized() {
   background(10, 10, 20);
 }
 
-// マウスがクリックされたときに波動を追加
-function mousePressed() {
-  let centerX = mouseX;
-  let centerY = mouseY;
+// マウスがクリックされたときの処理（確実に動作するように）
+function handleMousePress() {
+  // クリック位置を保存
+  clickX = mouseX;
+  clickY = mouseY;
   
+  // 波紋エフェクトを有効に
+  clickRipple = true;
+  rippleSize = 0;
+  rippleAlpha = 200;
+  
+  // パーティクルに力を加える（強さを増加）
+  applyForceToParticles(clickX, clickY, 10, 400);
+  
+  // デバッグ用にコンソールログを追加
+  console.log("Mouse clicked at:", clickX, clickY);
+  
+  // ダブルタップ時は色を変更
+  let currentTime = millis();
+  if (currentTime - lastClickTime < 300) {
+    // パーティクルの色をランダムに変更
+    for (let i = 0; i < particles.length; i++) {
+      if (random() < 0.3) {
+        particles[i].color = random(colors);
+      }
+    }
+  }
+  lastClickTime = currentTime;
+}
+
+// 指定位置からパーティクルに力を加える
+function applyForceToParticles(centerX, centerY, strength, radius) {
   for (let i = 0; i < particles.length; i++) {
     let p = particles[i];
     let distance = dist(p.pos.x, p.pos.y, centerX, centerY);
-    if (distance < 300) {
+    if (distance < radius) {
       let angle = atan2(p.pos.y - centerY, p.pos.x - centerX);
-      let force = map(distance, 0, 300, 5, 0);
+      let force = map(distance, 0, radius, strength, 0);
       p.vel.x += cos(angle) * force;
       p.vel.y += sin(angle) * force;
+      
+      // サイズを一時的に大きくする
+      p.size *= 1.5;
+      // 元のサイズに戻すタイマーは省略（複雑になるため）
     }
   }
 }
